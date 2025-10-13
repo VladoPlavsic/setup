@@ -1,0 +1,37 @@
+#!/bin/bash
+
+echo -n "Enter environment name [DEV, UAT, PROD]: "
+read CLUSTER_ENV
+
+case $CLUSTER_ENV in
+
+  DEV | UAT)
+  echo -n "Enter cluster name [IC, NAM]: "
+  read CLUSTER
+
+  ;;
+
+  PROD)
+  echo -n "Enter cluster name [IC, NAM, ERC]: "
+  read CLUSTER
+  ;;
+esac
+
+
+k8s-switch-context $CLUSTER_ENV $CLUSTER
+
+case $CLUSTER_ENV in
+
+  DEV)
+  kubectl -n evse-dev get po
+  ;;
+
+  UAT)
+  kubectl -n evse-uat get po
+  ;;
+
+  PROD)
+  kubectl -n evse-prod get po
+  ;;
+
+esac

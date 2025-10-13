@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "Select roles: "
+echo "Role               | Description       "
+echo "database-pg-prod   | "
+
+tsh request create --roles="k8s-developer-prod,monitoring-prod,vault-prod" --max-duration=4d --reason="release"  --nowait
