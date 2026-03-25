@@ -1,0 +1,85 @@
+start-at-login = true
+automatically-unhide-macos-hidden-apps = true
+
+# Notify sketchybar on workspace change
+exec-on-workspace-change = [
+  '/bin/bash', '-c',
+  'sketchybar --trigger aerospace_workspace_change FOCUSED=$AEROSPACE_FOCUSED_WORKSPACE PREV=$AEROSPACE_PREV_FOCUSED_WORKSPACE'
+]
+
+[gaps]
+inner.horizontal = 8
+inner.vertical   = 8
+outer.left       = 8
+outer.bottom     = 8
+outer.top        = 35
+outer.right      = 8
+
+[mode.main.binding]
+# ── Focus ─────────────────────────────────────────────────────────────
+# cmd+alt+hjkl  (hjkl = vim-style, arrows also work)
+cmd-alt-h     = 'focus left'
+cmd-alt-l     = 'focus right'
+cmd-alt-j     = 'focus down'
+cmd-alt-k     = 'focus up'
+cmd-alt-left  = 'focus left'
+cmd-alt-right = 'focus right'
+cmd-alt-down  = 'focus down'
+cmd-alt-up    = 'focus up'
+
+# ── Move windows ──────────────────────────────────────────────────────
+# cmd+alt+shift+hjkl — mirrors Rectangle's ⌘⌥⇧+arrow pattern
+cmd-alt-shift-h     = 'move left'
+cmd-alt-shift-l     = 'move right'
+cmd-alt-shift-j     = 'move down'
+cmd-alt-shift-k     = 'move up'
+cmd-alt-shift-left  = 'move left'
+cmd-alt-shift-right = 'move right'
+cmd-alt-shift-down  = 'move down'
+cmd-alt-shift-up    = 'move up'
+
+# ── Move to display ────────────────────────────────────────────────────
+# mirrors Rectangle's ⌘⌥⌃+arrow
+cmd-alt-ctrl-right = 'move-node-to-monitor next'
+cmd-alt-ctrl-left  = 'move-node-to-monitor prev'
+cmd-alt-ctrl-up    = 'move-node-to-monitor next'
+cmd-alt-ctrl-down  = 'move-node-to-monitor prev'
+
+# ── Layout & size ──────────────────────────────────────────────────────
+cmd-alt-shift-f     = 'fullscreen'                       # mirrors ⌘⌥⇧F (almostMaximize)
+cmd-alt-shift-space = 'layout floating tiling'
+cmd-alt-slash       = 'layout tiles horizontal vertical'
+cmd-alt-comma       = 'layout accordion horizontal vertical'
+cmd-alt-shift-b     = 'balance-sizes'
+cmd-alt-minus       = 'resize smart -50'
+cmd-alt-equal       = 'resize smart +50'
+
+# ── Workspaces ─────────────────────────────────────────────────────────
+cmd-alt-1 = 'workspace 1'
+cmd-alt-2 = 'workspace 2'
+cmd-alt-3 = 'workspace 3'
+cmd-alt-4 = 'workspace 4'
+cmd-alt-5 = 'workspace 5'
+cmd-alt-6 = 'workspace 6'
+cmd-alt-7 = 'workspace 7'
+cmd-alt-8 = 'workspace 8'
+cmd-alt-9 = 'workspace 9'
+
+cmd-alt-shift-1 = 'move-node-to-workspace 1'
+cmd-alt-shift-2 = 'move-node-to-workspace 2'
+cmd-alt-shift-3 = 'move-node-to-workspace 3'
+cmd-alt-shift-4 = 'move-node-to-workspace 4'
+cmd-alt-shift-5 = 'move-node-to-workspace 5'
+cmd-alt-shift-6 = 'move-node-to-workspace 6'
+cmd-alt-shift-7 = 'move-node-to-workspace 7'
+cmd-alt-shift-8 = 'move-node-to-workspace 8'
+cmd-alt-shift-9 = 'move-node-to-workspace 9'
+
+# ── Spotify ────────────────────────────────────────────────────────────
+cmd-alt-shift-p = 'exec-and-forget osascript -e "tell application \"Spotify\" to playpause"'
+cmd-alt-shift-n = 'exec-and-forget osascript -e "tell application \"Spotify\" to next track"'
+cmd-alt-shift-m = 'exec-and-forget osascript -e "tell application \"Spotify\" to previous track"'
+
+# ── Misc ───────────────────────────────────────────────────────────────
+cmd-alt-shift-r = 'reload-config'
+cmd-alt-shift-q = 'close'

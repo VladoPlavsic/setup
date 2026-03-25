@@ -1,0 +1,23 @@
+[user]
+	name = Vlado Plavsic
+	email = plavsicvlado98@gmail.com
+[credential]
+	helper = osxkeychain
+[init]
+	templatedir = ~/.git-templates
+	defaultBranch = master
+[rerere]
+	enabled = true
+[core]
+	editor = nvim
+[merge]
+	tool = nvimdiff
+[alias]
+	sc = !/bin/bash git-smart-commit
+	st = !/bin/bash git-start-task
+[diff]
+	tool = nvim
+[difftool "nvim"]
+	cmd = nvim -d \"$LOCAL\" \"$REMOTE\"
+[difftool]
+	prompt = false

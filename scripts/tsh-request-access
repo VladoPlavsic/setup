@@ -1,4 +1,0 @@
-#!/bin/bash
-
-prodctx
-tsh request create --roles=k8s-developer-prod --max-duration $1 --reason="$2" --nowait

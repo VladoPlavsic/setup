@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_FILE="$HOME/.config/git/custom"
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: git start-task <clickup-task-url>"
+  exit 1
+fi
+
+url="$1"
+
+# Extract task ID from ClickUp URL (e.g. https://app.clickup.com/t/86b8fnqb3)
+task_id=$(echo "$url" | grep -oE '[a-z0-9]+$')
+
+if [[ -z "$task_id" ]]; then
+  echo "Error: Could not extract task ID from URL: $url"
+  exit 1
+fi
+
+# Read API token from config
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  echo "Error: Config file not found at $CONFIG_FILE"
+  exit 1
+fi
+
+api_token=$(jq -r '.cli.integrations.clickup.api_token' "$CONFIG_FILE")
+
+if [[ -z "$api_token" || "$api_token" == "null" ]]; then
+  echo "Error: API token not found in config at cli.integrations.clickup.api_token"
+  exit 1
+fi
+
+# Fetch task info from ClickUp API
+echo "Fetching task $task_id from ClickUp..."
+response=$(curl -s --request GET \
+  --url "https://api.clickup.com/api/v2/task/$task_id" \
+  --header "Authorization: $api_token" \
+  --header "accept: application/json")
+
+task_name=$(echo "$response" | jq -r '.name // empty')
+custom_id=$(echo "$response" | jq -r '.custom_id // empty')
+
+if [[ -z "$task_name" ]]; then
+  echo "Error: Could not fetch task. API response:"
+  echo "$response" | jq . 2>/dev/null || echo "$response"
+  exit 1
+fi
+
+# Use custom_id if available, otherwise fall back to task_id
+task_ref="${custom_id:-$task_id}"
+
+echo ""
+echo "Task: $task_name"
+echo "ID:   $task_ref"
+echo ""
+
+# Ask user for task type via fzf
+prefix=$(printf "fix\nfeature" | fzf --prompt="Task type: " --height=~5 --layout=reverse --no-info)
+
+if [[ -z "$prefix" ]]; then
+  echo "No task type selected. Aborting."
+  exit 1
+fi
+
+# Ask user to specify what branch he want's to rebase from
+source_branch=$(git branch | fzf --prompt="Source branch: " --height=~5 --layout=reverse --no-info | sed -e 's/^\* //' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+if [[ -z "$source_branch" ]]; then
+  echo "No source branch selected. Aborting."
+  exit 1
+fi
+
+# Format branch name: lowercase, replace non-alphanumeric with dashes, collapse multiple dashes, trim trailing dash
+branch_slug=$(echo "$task_name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\{2,\}/-/g' | sed 's/-$//' | sed 's/^-//')
+
+branch_name="${prefix}/CU-${task_ref}-${branch_slug}"
+
+echo ""
+echo "Checking out source branch"
+git checkout "$source_branch"
+echo "Fetching source branch"
+git pull origin "$source_branch"
+echo "Creating branch: $branch_name"
+git checkout -b "$branch_name"
+echo "Done. You're now on branch: $branch_name"

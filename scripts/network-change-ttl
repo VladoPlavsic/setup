@@ -1,2 +1,0 @@
-sysctl net.inet.ip.ttl=$1
-sysctl net.inet6.ip6.hlim=$1

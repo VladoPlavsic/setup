@@ -1,0 +1,49 @@
+#!/bin/bash
+# Smart commit: prepopulates commit message template based on branch name
+# Usage: git-smart-commit [additional git commit args]
+#
+# Branch patterns:
+#   fix/CU-XXXX*    -> BUG template with task number
+#   feature/CU-XXXX* -> FEATURE template with task number
+#   other           -> plain commit
+
+branch=$(git symbolic-ref HEAD 2>/dev/null | sed 's#refs/heads/##')
+
+if [[ -z "$branch" ]]; then
+    echo "Error: Not in a git repository or HEAD is detached"
+    exit 1
+fi
+
+# Extract task number from branch name
+if [[ "$branch" =~ ^fix/CU-([a-zA-Z0-9]+) ]]; then
+    task="${BASH_REMATCH[1]}"
+    template="[CU-${task}]
+
+[CU-${task}](https://app.clickup.com/t/${task})
+
+**Description and context:**
+
+-
+
+"
+    git commit -em "$template" "$@"
+
+elif [[ "$branch" =~ ^feature/CU-([a-zA-Z0-9]+) ]]; then
+    task="${BASH_REMATCH[1]}"
+    template="[CU-${task}]
+
+[CU-${task}](https://app.clickup.com/t/${task})
+
+**Description and context:**
+
+-
+
+**How to test:**
+
+"
+    git commit -em "$template" "$@"
+
+else
+    # No matching pattern, plain commit
+    git commit "$@"
+fi

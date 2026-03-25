@@ -1,0 +1,215 @@
+#!/bin/bash
+
+source "$CONFIG_DIR/colors.sh"
+
+FONT="JetBrainsMono Nerd Font"
+PLUGIN_DIR="$CONFIG_DIR/plugins"
+
+# ── Bar ────────────────────────────────────────────────────────────────
+sketchybar --bar \
+  height=32        \
+  position=top     \
+  y_offset=0       \
+  margin=0         \
+  topmost=window   \
+  padding_left=6   \
+  padding_right=6  \
+  color=$BAR_COLOR \
+  border_width=0   \
+  shadow=off
+
+# ── Defaults ───────────────────────────────────────────────────────────
+sketchybar --default \
+  updates=when_shown                    \
+  icon.font="$FONT:Regular:14.0"        \
+  icon.color=$WHITE                     \
+  label.font="$FONT:Regular:13.0"       \
+  label.color=$WHITE                    \
+  padding_left=4                        \
+  padding_right=4                       \
+  label.padding_left=4                  \
+  label.padding_right=4                 \
+  icon.padding_left=4                   \
+  icon.padding_right=4
+
+# ── Spaces (Aerospace workspaces) ──────────────────────────────────────
+sketchybar --add event aerospace_workspace_change
+
+for i in $(seq 1 9); do
+  sketchybar --add item space.$i left \
+    --set space.$i                                \
+      icon="$i"                                   \
+      icon.font="$FONT:Bold:12.0"                 \
+      icon.color=$SUBTEXT                         \
+      background.color=$SPACE_COLOR               \
+      background.corner_radius=4                  \
+      background.height=20                        \
+      background.drawing=off                      \
+      label.drawing=off                           \
+      padding_left=3                              \
+      padding_right=3                             \
+      script="$PLUGIN_DIR/space.sh"               \
+      click_script="aerospace workspace $i"       \
+    --subscribe space.$i aerospace_workspace_change
+done
+
+# Spacer between spaces and app name
+sketchybar --add item spacer_left left \
+  --set spacer_left width=8 background.drawing=off label.drawing=off icon.drawing=off
+
+# ── Front app ──────────────────────────────────────────────────────────
+sketchybar --add item front_app left \
+  --set front_app                           \
+    icon.drawing=off                        \
+    label.font="$FONT:SemiBold:13.0"        \
+    label.color=$WHITE                      \
+    script="$PLUGIN_DIR/front_app.sh"       \
+  --subscribe front_app front_app_switched
+
+# ── Media (center) ─────────────────────────────────────────────────────
+sketchybar --add item media.prev center \
+  --set media.prev                                     \
+    drawing=off                                        \
+    icon="$(python3 -c "print('\uf04a', end='')")"    \
+    icon.color=$SUBTEXT                                \
+    label.drawing=off                                  \
+    width=30                                           \
+    padding_left=0                                     \
+    padding_right=0                                    \
+    click_script="osascript -e 'tell application \"Spotify\" to previous track'"
+
+sketchybar --add item media.play center \
+  --set media.play                                     \
+    drawing=off                                        \
+    label.drawing=off                                  \
+    icon.color=$WHITE                                  \
+    width=30                                           \
+    padding_left=0                                     \
+    padding_right=0                                    \
+    click_script="osascript -e 'tell application \"Spotify\" to playpause'"
+
+sketchybar --add item media.next center \
+  --set media.next                                     \
+    drawing=off                                        \
+    icon="$(python3 -c "print('\uf04e', end='')")"    \
+    icon.color=$SUBTEXT                                \
+    label.drawing=off                                  \
+    width=30                                           \
+    padding_left=0                                     \
+    padding_right=0                                    \
+    click_script="osascript -e 'tell application \"Spotify\" to next track'"
+
+sketchybar --add item spotify left \
+  --set spotify                                        \
+    drawing=off                                        \
+    icon.drawing=off                                   \
+    label.font="$FONT:Regular:12.0"                    \
+    label.color=$SUBTEXT                               \
+    padding_left=10                                    \
+    padding_right=6
+
+sketchybar --add bracket media_bracket                 \
+    media.prev media.play media.next                   \
+  --set media_bracket                                  \
+    background.color=$SPACE_COLOR                      \
+    background.corner_radius=8                         \
+    background.height=24                               \
+    background.drawing=off
+
+# ── Right side ─────────────────────────────────────────────────────────
+sketchybar --add item language right \
+  --set language                          \
+    update_freq=2                         \
+    script="$PLUGIN_DIR/language.sh"
+
+sketchybar --add item wifi right \
+  --set wifi                              \
+    label.drawing=off                     \
+    update_freq=30                        \
+    script="$PLUGIN_DIR/wifi.sh"
+
+sketchybar --add item battery right \
+  --set battery                           \
+    update_freq=60                        \
+    script="$PLUGIN_DIR/battery.sh"       \
+  --subscribe battery system_woke power_source_change
+
+sketchybar --add item volume right \
+  --set volume                            \
+    script="$PLUGIN_DIR/volume.sh"        \
+  --subscribe volume volume_change system_woke
+
+sketchybar --add item stats right \
+  --set stats                                         \
+    icon="󰻠"                                         \
+    label.drawing=off                                 \
+    popup.horizontal=true                             \
+    popup.align=right                                 \
+    popup.background.color=$SPACE_COLOR               \
+    popup.background.corner_radius=8                  \
+    popup.background.border_width=0                   \
+    click_script="sketchybar --set stats popup.drawing=toggle"
+
+sketchybar --add item stats.cpu popup.stats \
+  --set stats.cpu                                     \
+    update_freq=3                                     \
+    script="$PLUGIN_DIR/cpu.sh"
+
+sketchybar --add item stats.ram popup.stats \
+  --set stats.ram                                     \
+    update_freq=10                                    \
+    script="$PLUGIN_DIR/ram.sh"
+
+sketchybar --add item clock right \
+  --set clock                             \
+    update_freq=10                        \
+    script="$PLUGIN_DIR/clock.sh"         \
+    popup.align=right                     \
+    popup.background.color=$SPACE_COLOR   \
+    popup.background.corner_radius=8      \
+    popup.background.border_width=0       \
+    click_script="sketchybar --set clock popup.drawing=toggle; bash $PLUGIN_DIR/calendar.sh"
+
+sketchybar --add item clock.cal.header popup.clock \
+  --set clock.cal.header                            \
+    label.font="$FONT:Bold:12.0"                    \
+    label.color=$WHITE                              \
+    icon.drawing=off                                \
+    padding_left=10                                 \
+    padding_right=10
+
+sketchybar --add item clock.cal.days popup.clock \
+  --set clock.cal.days                              \
+    label.font="$FONT:Regular:11.0"                 \
+    label.color=$SUBTEXT                            \
+    icon.drawing=off                                \
+    width=140                                       \
+    padding_left=10                                 \
+    padding_right=10
+
+sketchybar --add item clock.cal.w1 popup.clock \
+  --set clock.cal.w1 icon.drawing=off width=140 label.font="$FONT:Regular:11.0" label.color=$WHITE padding_left=10 padding_right=10
+sketchybar --add item clock.cal.w2 popup.clock \
+  --set clock.cal.w2 icon.drawing=off width=140 label.font="$FONT:Regular:11.0" label.color=$WHITE padding_left=10 padding_right=10
+sketchybar --add item clock.cal.w3 popup.clock \
+  --set clock.cal.w3 icon.drawing=off width=140 label.font="$FONT:Regular:11.0" label.color=$WHITE padding_left=10 padding_right=10
+sketchybar --add item clock.cal.w4 popup.clock \
+  --set clock.cal.w4 icon.drawing=off width=140 label.font="$FONT:Regular:11.0" label.color=$WHITE padding_left=10 padding_right=10
+sketchybar --add item clock.cal.w5 popup.clock \
+  --set clock.cal.w5 icon.drawing=off width=140 label.font="$FONT:Regular:11.0" label.color=$WHITE padding_left=10 padding_right=10
+sketchybar --add item clock.cal.w6 popup.clock \
+  --set clock.cal.w6 icon.drawing=off width=140 label.font="$FONT:Regular:11.0" label.color=$WHITE padding_left=10 padding_right=10
+
+# ── Init ───────────────────────────────────────────────────────────────
+sketchybar --update
+
+# Set initial workspace highlight
+CURRENT=$(aerospace list-workspaces --focused 2>/dev/null || echo "1")
+sketchybar --trigger aerospace_workspace_change FOCUSED=$CURRENT PREV=$CURRENT
+
+# Set initial Spotify state and start live stream
+bash "$PLUGIN_DIR/media.sh"
+
+# Populate calendar popup
+pkill -f "spotify_stream.sh" 2>/dev/null
+bash "$PLUGIN_DIR/spotify_stream.sh" &
