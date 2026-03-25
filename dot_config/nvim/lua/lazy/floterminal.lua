@@ -6,11 +6,19 @@ return {
     end,
     keys = {
       {
-        '<leader>tt',
-        mode = { 'n', 't' },
+        '<leader>to',
+        mode = { 'n' },
         function()
           vim.cmd 'Floterminal'
           vim.cmd 'startinsert'
+        end,
+        desc = 'toggle floating terminal',
+      },
+      {
+        '<leader>tq',
+        mode = { 't' },
+        function()
+          vim.cmd 'Floterminal'
         end,
         desc = 'toggle floating terminal',
       },

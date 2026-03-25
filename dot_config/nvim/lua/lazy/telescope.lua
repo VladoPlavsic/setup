@@ -45,16 +45,17 @@ return {
 
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
+      local set = vim.api.nvim_set_hl
+      set(0, 'TelescopeNormal', { bg = 'none' })
+      set(0, 'TelescopeBorder', { bg = 'none' })
+      set(0, 'TelescopePromptNormal', { bg = 'none' })
+      set(0, 'TelescopePromptBorder', { bg = 'none' })
+      set(0, 'TelescopeResultsNormal', { bg = 'none' })
+      set(0, 'TelescopeResultsBorder', { bg = 'none' })
+      set(0, 'TelescopePreviewNormal', { bg = 'none' })
+      set(0, 'TelescopePreviewBorder', { bg = 'none' })
+
       require('telescope').setup {
-        -- You can put your default mappings / updates / etc. in here
-        --  All the info you're looking for is in `:help telescope.setup()`
-        --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),

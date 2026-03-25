@@ -67,10 +67,6 @@ return {
           -- or a suggestion from your LSP for this to activate.
           map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
 
-          -- Show documentation
-          -- Couldn't get it working
-          -- map('grD', vim.lsp.buf.signature_help, '[G]oto Documentation', { focusable = true })
-
           -- Find references for the word under your cursor.
           map('grr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
 
@@ -82,10 +78,6 @@ return {
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
           map('grd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
-
-          -- WARN: This is not Goto Definition, this is Goto Declaration.
-          --  For example, in C this would take you to the header.
-          -- map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
@@ -213,6 +205,7 @@ return {
         pylsp = {},
         tailwindcss = {},
         eslint = {},
+        texlab = {},
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
@@ -244,7 +237,8 @@ return {
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'stylua', -- Used to format Lua code
+        'stylua',    -- Lua
+        'prettierd', -- JS/TS/JSON
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

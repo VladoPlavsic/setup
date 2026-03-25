@@ -32,20 +32,6 @@ return {
       },
       indent = { enable = true, disable = { 'ruby', 'elixir' } },
     },
-    dependencies = {
-      'OXY2DEV/markview.nvim',
-      config = function()
-        local presets = require 'markview.presets'
-
-        require('markview').setup {
-          markdown = {
-            headings = presets.headings.glow_center,
-            table = presets.tables.rounded,
-            horizlontal_rules = presets.horizontal_rules.thin,
-          },
-        }
-      end,
-    },
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
     --

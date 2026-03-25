@@ -16,7 +16,7 @@ vim.g.have_nerd_font = true
 
 -- Make line numbers default
 vim.o.number = true
--- vim.o.relativenumber = true
+vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -116,13 +116,13 @@ vim.keymap.set('n', '<leader>bd', '<cmd>bp|bd #<cr>', { silent = true, desc = 'D
 
 vim.keymap.set('n', 'gf', 'gF', { silent = true, desc = 'Go to file' })
 
-vim.keymap.set('n', '<leader>cf', function()
-  vim.cmd ':let  @+=expand("%:p")'
-end, { desc = 'Coppy full path of current buffer' })
+vim.keymap.set('n', '<leader>yf', function()
+  vim.cmd ':let @+=expand("%:p")'
+end, { desc = 'Yank full path of current buffer' })
 
-vim.keymap.set('n', '<leader>cr', function()
+vim.keymap.set('n', '<leader>yr', function()
   vim.cmd ':let @+=expand("%")'
-end, { desc = 'Copy relative path of current buffer' })
+end, { desc = 'Yank relative path of current buffer' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -171,9 +171,13 @@ rtp:prepend(lazypath)
 --    :Lazy update
 --
 require('lazy').setup({
+  -- Store commands to quick access (tome)
+  require 'lazy.tome',
+  require 'lazy.persistence',
   -- A hackable Markdown, HTML, LaTeX, Typst & YAML previewer for Neovim
   -- Full git cli support, I don't use any keybindings, use :Git and any known git command
   require 'lazy.vim-fugitive',
+  require 'lazy.diffview',
   -- Some crazy stuff with notifications and nice command line
   -- require 'lazy.noice',
   -- Automatically detect the indentation style used in a buffer and updating the buffer options accordingly.
@@ -184,6 +188,7 @@ require('lazy').setup({
   require 'lazy.which-key',
   -- Extendable fuzzy finder over lists.
   require 'lazy.telescope',
+  require 'lazy.grug-far',
   -- Neovim config lazy updating libraries
   require 'lazy.lazydev',
   -- Default Nvim LSP client configurations for various LSP servers.
@@ -237,6 +242,8 @@ require('lazy').setup({
   require 'lazy.vim-test',
   -- Claude AI integration
   require 'lazy.claude-code',
+  -- LaTeX support
+  require 'lazy.vimtex',
 
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!

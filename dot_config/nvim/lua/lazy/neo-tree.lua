@@ -36,7 +36,7 @@ return {
       group_empty_dirs = true, -- Group empty directories
       show_unloaded = true, -- Show unloaded buffers
       window = {
-        position = 'float', -- Position of the Neo-tree window
+        position = 'top', -- Position of the Neo-tree window
         mapping_options = {
           noremap = true,
           nowait = true,
