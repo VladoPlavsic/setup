@@ -61,7 +61,7 @@ return {
             require('telescope.themes').get_dropdown(),
           },
           ['live-grep-args'] = {
-            auto_quoting = true, -- enable/disable auto-quoting
+            auto_quoting = false, -- enable/disable auto-quoting
             require 'telescope-live-grep-args.actions',
           },
         },

@@ -24,6 +24,10 @@ vim.o.mouse = 'a'
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
 
+-- Hide statusline (piped to tmux via tpipeline)
+vim.o.laststatus = 0
+vim.o.cmdheight = 0
+
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option for OS clipboard to remain independent.
@@ -182,8 +186,13 @@ require('lazy').setup({
   -- require 'lazy.noice',
   -- Automatically detect the indentation style used in a buffer and updating the buffer options accordingly.
   require 'lazy.guess-indent',
+  -- transparency
+  require 'lazy.transparent',
   -- Neovim statusline
+  require 'lazy.tipline',
   require 'lazy.lualine',
+  -- zen
+  -- require 'lazy.zen-mode',
   -- Displays available keybindings in popup.
   require 'lazy.which-key',
   -- Extendable fuzzy finder over lists.
