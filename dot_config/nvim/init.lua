@@ -25,7 +25,7 @@ vim.o.mouse = 'a'
 vim.o.showmode = false
 
 -- Hide statusline (piped to tmux via tpipeline)
-vim.o.laststatus = 0
+vim.opt.laststatus = 0
 vim.o.cmdheight = 0
 
 -- Sync clipboard between OS and Neovim.
@@ -175,6 +175,8 @@ rtp:prepend(lazypath)
 --    :Lazy update
 --
 require('lazy').setup({
+  -- Waka Time - track what you spend time on
+  require 'lazy.vim-wakatime',
   -- Store commands to quick access (tome)
   require 'lazy.tome',
   require 'lazy.persistence',
@@ -188,9 +190,9 @@ require('lazy').setup({
   require 'lazy.guess-indent',
   -- transparency
   require 'lazy.transparent',
-  -- Neovim statusline
-  require 'lazy.tipline',
-  require 'lazy.lualine',
+  -- Neovim statusline (piped to tmux via tpipeline)
+  --  require 'lazy.lualine',
+  require 'lazy.tpipline',
   -- zen
   -- require 'lazy.zen-mode',
   -- Displays available keybindings in popup.
@@ -279,6 +281,8 @@ require('lazy').setup({
     },
   },
 })
+
+require 'custom.statusline'
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et

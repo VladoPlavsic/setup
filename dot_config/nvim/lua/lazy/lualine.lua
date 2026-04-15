@@ -1,20 +1,10 @@
 return {
   {
-    lazy = false,
     -- See lualine as statusline
     'nvim-lualine/lualine.nvim',
+    lazy = false,
     -- See `:help lualine.txt`
-    config = function(_, opts)
-      require('lualine').setup(opts)
-      local hide_stl = function()
-        vim.opt.laststatus = 0
-      end
-      hide_stl()
-      vim.defer_fn(hide_stl, 0)
-      vim.api.nvim_create_autocmd({ 'VimEnter', 'UIEnter', 'ColorScheme', 'BufEnter', 'WinEnter' }, {
-        callback = hide_stl,
-      })
-    end,
+
     opts = {
       options = {
         icons_enabled = vim.g.have_nerd_font,

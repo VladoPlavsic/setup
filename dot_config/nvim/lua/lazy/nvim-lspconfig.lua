@@ -201,8 +201,8 @@ return {
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
         --
-        elixirls = {},
-        pylsp = {},
+        expert = {},
+        basedpyright = {},
         tailwindcss = {},
         eslint = {},
         texlab = {},
@@ -237,7 +237,7 @@ return {
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'stylua',    -- Lua
+        'stylua', -- Lua
         'prettierd', -- JS/TS/JSON
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }

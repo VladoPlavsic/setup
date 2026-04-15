@@ -258,6 +258,224 @@ cmd_status() {
   echo
 }
 
+_wait_for_port() {
+  local port=$1
+  local retries=20
+  while ! nc -z localhost "$port" 2>/dev/null; do
+    retries=$((retries - 1))
+    [[ $retries -eq 0 ]] && { echo -e "${RED}Port $port never became ready.${RESET}" >&2; return 1; }
+    sleep 0.3
+  done
+}
+
+_port_forward() {
+  local pod=$1 ns=$2 local_port=$3 container_port=$4
+  kubectl port-forward "pod/$pod" -n "$ns" "$local_port:$container_port" >/dev/null &
+  _PFORWARD_PID=$!
+  _wait_for_port "$local_port" >&2
+}
+
+_cleanup_port_forward() {
+  echo -e "\n${DIM}Stopping...${RESET}" >&2
+  kill "$_PFORWARD_PID" 2>/dev/null || true
+  _PFORWARD_PID=""
+}
+
+cmd_subscribe() {
+  local use_last=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --last) use_last="--last"; shift ;;
+      *) shift ;;
+    esac
+  done
+
+  select_env_and_cluster "$use_last" >&2
+  cmd_ctx "$CLUSTER_ENV" "$CLUSTER" >&2
+
+  local ns=$(get_namespace "$CLUSTER_ENV" "$CLUSTER")
+  select_pod "$ns" >&2
+
+  prompt "Charger identity: " >&2
+  read -r IDENTITY
+  [[ -z "$IDENTITY" ]] && { echo -e "${RED}Identity required.${RESET}" >&2; exit 1; }
+
+  prompt "External ID: " >&2
+  read -r EXTERNAL_ID
+  [[ -z "$EXTERNAL_ID" ]] && { echo -e "${RED}External ID required.${RESET}" >&2; exit 1; }
+
+  local DEFAULT_FILE="${POD}_${IDENTITY}_${EXTERNAL_ID}_subscription.log"
+  prompt "Output file [${DEFAULT_FILE}]: " >&2
+  read -r INPUT_FILE
+  local OUTPUT_FILE="${INPUT_FILE:-$DEFAULT_FILE}"
+
+  local CONTAINER_PORT
+  CONTAINER_PORT=$(kubectl get pod "$POD" -n "$ns" -o jsonpath='{.spec.containers[0].ports[0].containerPort}')
+  local LOCAL_PORT
+  LOCAL_PORT=$(python3 -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
+
+  echo >&2
+  echo -e "  ${BOLD}Pod:${RESET}        $POD" >&2
+  echo -e "  ${BOLD}Identity:${RESET}   $IDENTITY" >&2
+  echo -e "  ${BOLD}External ID:${RESET} $EXTERNAL_ID" >&2
+  echo -e "  ${BOLD}Output:${RESET}     $OUTPUT_FILE" >&2
+  echo -e "  ${BOLD}Forward:${RESET}    localhost:$LOCAL_PORT -> $POD:$CONTAINER_PORT" >&2
+  echo >&2
+
+  _port_forward "$POD" "$ns" "$LOCAL_PORT" "$CONTAINER_PORT" >&2
+  trap _cleanup_port_forward EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+
+  local QUERY
+  QUERY="subscription { package(identity: \\\"$IDENTITY\\\", externalId: \\\"$EXTERNAL_ID\\\") { id rawContent parsedContent protocol source sender receiver timestamp identity externalId additionalData { identity externalId } } }"
+
+  success "Subscribed — streaming to ${BOLD}${OUTPUT_FILE}${RESET} (Ctrl+C to stop)" >&2
+
+  (
+    sleep 0.3
+    echo '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1","join_ref":null}'
+    sleep 0.3
+    echo '{"topic":"__absinthe__:control","event":"phx_join","payload":{},"ref":"2","join_ref":"2"}'
+    sleep 0.3
+    printf '{"topic":"__absinthe__:control","event":"doc","payload":{"query":"%s"},"ref":"3","join_ref":"2"}\n' "$QUERY"
+    ref=4
+    while true; do
+      sleep 30
+      printf '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"%s","join_ref":null}\n' "$ref"
+      ref=$((ref + 1))
+    done
+  ) | websocat -n "ws://localhost:$LOCAL_PORT/graphql/websocket" | tee "$OUTPUT_FILE"
+}
+
+cmd_query() {
+  local use_last=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --last) use_last="--last"; shift ;;
+      *) shift ;;
+    esac
+  done
+
+  select_env_and_cluster "$use_last" >&2
+  cmd_ctx "$CLUSTER_ENV" "$CLUSTER" >&2
+
+  local ns=$(get_namespace "$CLUSTER_ENV" "$CLUSTER")
+  select_pod "$ns" >&2
+
+  menu "Select source" "TIMETICK" "OCS" >&2
+  local SOURCE="$MENU_RESULT"
+
+  prompt "Charger identity: " >&2
+  read -r IDENTITY
+  [[ -z "$IDENTITY" ]] && { echo -e "${RED}Identity required.${RESET}" >&2; exit 1; }
+
+  prompt "Period — last N minutes [60]: " >&2
+  read -r MINUTES
+  MINUTES="${MINUTES:-60}"
+
+  local FROM TO
+  FROM=$(date -u -v-${MINUTES}M +"%Y-%m-%dT%H:%M:%SZ")
+  TO=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+  local DEFAULT_FILE="${POD}_${IDENTITY}_${SOURCE}_query.json"
+  prompt "Output file [${DEFAULT_FILE}]: " >&2
+  read -r INPUT_FILE
+  local OUTPUT_FILE="${INPUT_FILE:-$DEFAULT_FILE}"
+
+  local CONTAINER_PORT
+  CONTAINER_PORT=$(kubectl get pod "$POD" -n "$ns" -o jsonpath='{.spec.containers[0].ports[0].containerPort}')
+  local LOCAL_PORT
+  LOCAL_PORT=$(python3 -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
+
+  echo >&2
+  echo -e "  ${BOLD}Pod:${RESET}       $POD" >&2
+  echo -e "  ${BOLD}Source:${RESET}    $SOURCE" >&2
+  echo -e "  ${BOLD}Identity:${RESET}  $IDENTITY" >&2
+  echo -e "  ${BOLD}Period:${RESET}    $FROM → $TO" >&2
+  echo -e "  ${BOLD}Output:${RESET}    $OUTPUT_FILE" >&2
+  echo >&2
+
+  _port_forward "$POD" "$ns" "$LOCAL_PORT" "$CONTAINER_PORT" >&2
+  trap _cleanup_port_forward EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+
+  local GQL_QUERY='query Packages($filter: FilterByPackage!, $pagination: PagePaginationParams) { packages(filter: $filter, pagination: $pagination) { records { id rawContent parsedContent protocol source sender receiver timestamp identity externalId additionalData { identity externalId } } pagination { pageNumber pageSize totalPages totalEntries } } }'
+  local PAGE=1
+  local PAGE_SIZE=20
+  local TOTAL_PAGES=1
+  local ALL_RECORDS="[]"
+
+  success "Querying packages ($FROM → $TO)..." >&2
+
+  while [[ $PAGE -le $TOTAL_PAGES ]]; do
+    echo -e "  ${DIM}Fetching page $PAGE/$TOTAL_PAGES...${RESET}" >&2
+
+    local BODY
+    BODY=$(jq -n \
+      --arg identity "$IDENTITY" \
+      --arg source "$SOURCE" \
+      --arg from "$FROM" \
+      --arg to "$TO" \
+      --argjson page "$PAGE" \
+      --argjson pageSize "$PAGE_SIZE" \
+      --arg query "$GQL_QUERY" \
+      '{
+        query: $query,
+        variables: {
+          filter: {
+            identities: [$identity],
+            source: $source,
+            period: { from: $from, to: $to }
+          },
+          pagination: { page: $page, pageSize: $pageSize }
+        }
+      }')
+
+    local RESPONSE
+    RESPONSE=$(curl -s -X POST "http://localhost:$LOCAL_PORT/graphql" \
+      -H "Content-Type: application/json" \
+      -d "$BODY")
+
+    if [[ -z "$RESPONSE" ]]; then
+      echo -e "${RED}Empty response from server.${RESET}" >&2
+      exit 1
+    fi
+
+    if echo "$RESPONSE" | jq -e '.errors' >/dev/null 2>&1; then
+      echo -e "${RED}GraphQL error:${RESET}" >&2
+      echo "$RESPONSE" | jq '.errors' >&2
+      exit 1
+    fi
+
+    TOTAL_PAGES=$(echo "$RESPONSE" | jq '.data.packages.pagination.totalPages // 1')
+    local RECORDS
+    RECORDS=$(echo "$RESPONSE" | jq '.data.packages.records // []')
+    ALL_RECORDS=$(jq -n --argjson a "$ALL_RECORDS" --argjson b "$RECORDS" '$a + $b')
+
+    PAGE=$((PAGE + 1))
+  done
+
+  local TOTAL
+  TOTAL=$(echo "$ALL_RECORDS" | jq 'length')
+  echo >&2
+
+  local OUTPUT
+  OUTPUT=$(jq -n --argjson records "$ALL_RECORDS" --argjson total "$TOTAL" \
+    '{totalRecords: $total, records: $records}')
+
+  if [[ -z "$OUTPUT" ]]; then
+    echo -e "${RED}Failed to build output JSON.${RESET}" >&2
+    echo -e "${DIM}ALL_RECORDS preview: ${ALL_RECORDS:0:200}${RESET}" >&2
+    exit 1
+  fi
+
+  echo "$OUTPUT" | tee "$OUTPUT_FILE"
+  echo >&2
+  success "Saved $TOTAL records to ${BOLD}${OUTPUT_FILE}${RESET}" >&2
+}
+
 cmd_completion() {
   cat <<'COMPLETION'
 # k8s completion - add to ~/.bashrc or ~/.zshrc:
@@ -269,7 +487,7 @@ _k8s_completions() {
   local cmd="${COMP_WORDS[1]}"
 
   if [[ $COMP_CWORD -eq 1 ]]; then
-    COMPREPLY=($(compgen -W "ctx ls connect logs status completion help --last" -- "$cur"))
+    COMPREPLY=($(compgen -W "ctx ls connect logs subscribe query status completion help --last" -- "$cur"))
     return
   fi
 
@@ -284,7 +502,7 @@ _k8s_completions() {
         COMPREPLY=($(compgen -W "$clusters" -- "$cur"))
       fi
       ;;
-    ls|connect)
+    ls|connect|subscribe|query)
       COMPREPLY=($(compgen -W "--last" -- "$cur"))
       ;;
     logs)
@@ -315,6 +533,8 @@ cmd_help() {
   echo -e "  ${BOLD}ls${RESET}                 List pods"
   echo -e "  ${BOLD}connect${RESET}            Connect to pod's remote console"
   echo -e "  ${BOLD}logs${RESET} [options]     Follow pod logs"
+  echo -e "  ${BOLD}subscribe${RESET}          Subscribe to charger updates via WebSocket"
+  echo -e "  ${BOLD}query${RESET}              Query packages from DB via GraphQL"
   echo -e "  ${BOLD}status${RESET}             Show current context info"
   echo -e "  ${BOLD}completion${RESET}         Output shell completion script"
   echo
@@ -348,6 +568,8 @@ case "${1:-help}" in
   ctx)        shift; cmd_ctx "$@" ;;
   ls)         cmd_ls "$2" ;;
   connect)    cmd_connect "$2" ;;
+  subscribe)  shift; cmd_subscribe "$@" ;;
+  query)      shift; cmd_query "$@" ;;
   logs)       shift; cmd_logs "$@" ;;
   status)     cmd_status ;;
   completion) cmd_completion ;;

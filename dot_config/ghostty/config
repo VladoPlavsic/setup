@@ -3,7 +3,7 @@
 theme = Brogrammer
 
 background = #000000
-background-opacity = 0.60
+background-opacity = 0.75
 background-blur-radius = 0
 
 font-family = JetBrainsMonoNL Nerd Font 
