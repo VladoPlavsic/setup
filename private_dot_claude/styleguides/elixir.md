@@ -138,20 +138,29 @@ def process({:error, reason}), do: handle_error(reason)
 
 Use `case` only when matching on an *expression* (not a function argument) or when the arms have shared local bindings.
 
-### Pipelines must be at least 2 steps
+### Pipelines must have at least two `|>` operators
+
+A pipeline is defined by having **2 or more `|>` operators**. A single `|>` is not a pipeline
+— write it as a nested call or a temp binding instead.
 
 ```elixir
-# Good (2 steps)
-value |> transform() |> validate()
+# Bad — one |> is not a pipeline
+K8s.Client.watch("v1", "Pod", namespace: namespace())
+|> K8s.Selector.label({key, value})
 
-# Good (3+ steps)
-value
-|> normalize()
-|> transform()
-|> validate()
+# Good — rewrite to include the seed as a step, giving two |>
+"v1"
+|> K8s.Client.watch("Pod", namespace: namespace())
+|> K8s.Selector.label({key, value})
+
+# Also good — no pipe at all, either option below
+op = K8s.Client.watch("v1", "Pod", namespace: namespace())
+K8s.Selector.label(op, {key, value})
 ```
 
-2-step pipelines may stay on one line. 3+ steps go multi-line, one step per line.
+Formatting:
+- 2-operator pipelines: either single-line (`value |> a() |> b()`) or multi-line — either is fine.
+- 3+ operator pipelines: always multi-line, one step per line.
 
 ---
 
@@ -216,7 +225,7 @@ alias SimOrchestrator.RunSupervisor
 
 ## Specs and Docs
 
-- No `@spec` annotations. Functions are self-documenting through descriptive names, argument names, and variable names. Write English, not type signatures.
+- **`@spec` on every public function.** Types document intent precisely where English is ambiguous — what the function accepts, what it can return, including error tuples. Required on all public functions.
 - `@type t` on struct modules — types are still useful for struct references.
 - `@moduledoc` is optional. Use judgement:
   - **Skip it** for modules whose purpose is obvious from convention: state/struct definitions, model definitions, workflow (CRUD) modules, gRPC handler modules. These follow a known shape — there is nothing extra to say.
@@ -298,19 +307,20 @@ assert_in_delta DateTime.to_unix(result.timestamp), DateTime.to_unix(DateTime.ut
 
 ## Redis / Storage Modules
 
-- Each GenServer that owns Redis keys gets a sibling `Storage` module.
-- Key-building functions are private to `Storage`, returning strings.
+- Each module that owns Redis keys gets a sibling `Storage` sub-module (applies to GenServers and plain modules alike).
+- Key-building functions are **private** to `Storage` — never a shared centralized keys module.
 - No Redis calls outside of a `Storage` module.
-- Key namespace matches the server's module hierarchy:
+- Key namespace matches the owning module's hierarchy:
 
 ```
-HeartbeatMonitor.Storage  → keys: pod:{pod_id}:last_heartbeat, pods:accepting, ...
+K8s.ScaleManager.Storage  → keys: cluster:total_sims, pod:{pod_id}:*, pods:active, ...
+HeartbeatMonitor.Storage  → keys: pod:{pod_id}:last_heartbeat, ...
 SyncBarrier.Storage       → keys: run:{run_id}:barrier:*, run:{run_id}:status, ...
 ```
 
 ### Ownership rule
 
-A Storage module is exclusively written to by its owning GenServer — no other process may write to its keys. Reads are technically allowed from outside, but the preferred path is through the owning process (via an API call) so that the owner remains the single source of truth for its state. Direct reads from outside the owner are a code smell; do it only when the performance cost of a round-trip is demonstrably unacceptable.
+A Storage module is exclusively written to by its owning module — no other process may write to its keys. Reads are technically allowed from outside, but the preferred path is through the owning process (via an API call) so that the owner remains the single source of truth for its state. Direct reads from outside the owner are a code smell; do it only when the performance cost of a round-trip is demonstrably unacceptable.
 
 ---
 

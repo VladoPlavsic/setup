@@ -18,14 +18,14 @@ outer.right      = 8
 [mode.main.binding]
 # ── Focus ─────────────────────────────────────────────────────────────
 # cmd+alt+hjkl  (hjkl = vim-style, arrows also work)
-cmd-alt-h     = 'focus left'
-cmd-alt-l     = 'focus right'
-cmd-alt-j     = 'focus down'
-cmd-alt-k     = 'focus up'
-cmd-alt-left  = 'focus left'
-cmd-alt-right = 'focus right'
-cmd-alt-down  = 'focus down'
-cmd-alt-up    = 'focus up'
+cmd-ctrl-h     = 'focus left'
+cmd-ctrl-l     = 'focus right'
+cmd-ctrl-j     = 'focus down'
+cmd-ctrl-k     = 'focus up'
+cmd-ctrl-left  = 'focus left'
+cmd-ctrl-right = 'focus right'
+cmd-ctrl-down  = 'focus down'
+cmd-ctrl-up    = 'focus up'
 
 # ── Move windows ──────────────────────────────────────────────────────
 # cmd+alt+shift+hjkl — mirrors Rectangle's ⌘⌥⇧+arrow pattern
